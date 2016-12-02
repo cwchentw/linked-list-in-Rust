@@ -19,29 +19,16 @@ pub struct List<T> {
 
 impl<T> List<T> {
     pub fn new() -> List<T> {
-        unsafe {
-            let mut p_head = libc::malloc(mem::size_of::<Node<T>>()
-                                          as libc::size_t)
-                as *mut Node<T>;
-            p_head = 0 as *mut Node<T>;
-
-            let mut p_tail = libc::malloc(mem::size_of::<Node<T>>()
-                                          as libc::size_t)
-                as *mut Node<T>;
-            p_tail = 0 as *mut Node<T>;
-            List::<T>{ head: p_head, tail: p_tail }
-        }
-
+        let p_head = 0 as *mut Node<T>;
+        let p_tail = 0 as *mut Node<T>;
+        List::<T>{ head: p_head, tail: p_tail }
     }
 }
 
 impl<T> List<T> {
     pub fn len(&mut self) -> usize {
         unsafe {
-            let mut current = libc::malloc(mem::size_of::<Node<T>>()
-                                           as libc::size_t)
-                as *mut Node<T>;
-            current = self.head;
+            let mut current = self.head;
             let mut count = 0 as usize;
             while !current.is_null() {
                 current = (*current).next;
@@ -55,7 +42,8 @@ impl<T> List<T> {
 impl<T> List<T> {
     pub fn push(&mut self, value: T) {
         unsafe {
-            let node = libc::malloc(mem::size_of::<Node<T>>() as libc::size_t)
+            let node = libc::malloc(
+                mem::size_of::<Node<T>>() as libc::size_t)
                 as *mut Node<T>;
             ptr::write(node, Node {
                 data: value,
@@ -89,10 +77,7 @@ impl<T> List<T> where T: clone::Clone {
                 Ok(data)
             } else {
                 let data = (*self.tail).data.clone();
-                let mut current = libc::malloc(mem::size_of::<Node<T>>()
-                                               as libc::size_t)
-                    as *mut Node<T>;
-                current = self.tail;
+                let mut current = self.tail;
                 self.tail = (*current).prev;
                 (*self.tail).next = 0 as *mut Node<T>;
                 (*current).prev = 0 as *mut Node<T>;
@@ -107,10 +92,7 @@ impl<T> List<T> where T: clone::Clone {
     pub fn at<'a>(&mut self, index: usize) -> Result<T, &'a str> {
         unsafe {
             let mut count = 0 as usize;
-            let mut current = libc::malloc(mem::size_of::<Node<T>>()
-                                           as libc::size_t)
-                as *mut Node<T>;
-            current = self.head;
+            let mut current = self.head;
             while !current.is_null() {
                 if count == index {
                     return Ok((*current).data.clone());
@@ -119,6 +101,25 @@ impl<T> List<T> where T: clone::Clone {
                 count += 1;
             }
             Err("Index out of range")
+        }
+    }
+}
+
+impl<T> Drop for List<T> {
+    fn drop(&mut self) {
+        unsafe {
+            let mut current = self.head;
+            while !current.is_null() {
+                self.head = (*current).next;
+
+                if !self.head.is_null() {
+                    (*self.head).prev = 0 as *mut Node<T>;
+                    (*current).next = 0 as *mut Node<T>;
+                    libc::free(current as *mut libc::c_void);
+                }
+
+                current = self.head;
+            }
         }
     }
 }
