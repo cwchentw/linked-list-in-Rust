@@ -88,6 +88,55 @@ impl<T> List<T> where T: clone::Clone {
     }
 }
 
+impl<T> List<T> {
+    pub fn unshift(&mut self, value: T) {
+        unsafe {
+            let node = libc::malloc(
+                mem::size_of::<Node<T>>() as libc::size_t)
+                as *mut Node<T>;
+            ptr::write(node, Node {
+                data: value,
+                next: ptr::null_mut(),
+                prev: ptr::null_mut()
+            });
+
+            if self.head.is_null() {
+                self.head = node;
+                self.tail = node;
+            } else {
+                (*self.head).prev = node;
+                (*node).next = self.head;
+                self.head = node;
+            }
+        }
+    }
+}
+
+impl<T> List<T> where T: clone::Clone {
+    pub fn shift<'a>(&mut self) -> Result<T, &'a str> {
+        unsafe {
+            if self.head.is_null() {
+                return Err("Empty list");
+            }
+
+            if self.head == self.tail {
+                let data = (*self.head).data.clone();
+                self.head = 0 as *mut Node<T>;
+                self.tail = 0 as *mut Node<T>;
+                Ok(data)
+            } else {
+                let data = (*self.head).data.clone();
+                let mut current = self.head;
+                self.head = (*current).next;
+                (*self.head).prev = 0 as *mut Node<T>;
+                (*current).next = 0 as *mut Node<T>;
+                libc::free(current as *mut libc::c_void);
+                Ok(data)
+            }
+        }
+    }
+}
+
 impl<T> List<T> where T: clone::Clone {
     pub fn at<'a>(&mut self, index: usize) -> Result<T, &'a str> {
         unsafe {
@@ -170,6 +219,30 @@ mod tests {
         list.push(300);
 
         assert_eq!(300, list.pop().unwrap());
+        assert_eq!(2, list.len());
+    }
+
+    #[test]
+    fn test_unshift() {
+        let mut list = List::new() as List<i32>;
+        assert_eq!(0, list.len());
+
+        list.unshift(100);
+        list.unshift(200);
+        list.unshift(300);
+
+        assert_eq!(3, list.len());
+    }
+
+    #[test]
+    fn test_shift() {
+        let mut list = List::new() as List<i32>;
+
+        list.unshift(100);
+        list.unshift(200);
+        list.unshift(300);
+
+        assert_eq!(300, list.shift().unwrap());
         assert_eq!(2, list.len());
     }
 }
