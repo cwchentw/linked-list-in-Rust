@@ -63,17 +63,18 @@ impl<T> List<T> {
 }
 
 impl<T> List<T> where T: Copy {
-    pub fn pop<'a>(&mut self) -> Result<T, &'a str> {
+    pub fn pop<'a>(&mut self) -> Option<T> {
         unsafe {
             if self.head.is_null() {
-                return Err("Empty list");
+                return None;
             }
 
             if self.head == self.tail {
-                let data = (*self.head).data;
+                let data = (*self.tail).data;
+                libc::free(self.tail as *mut libc::c_void);
                 self.head = 0 as *mut Node<T>;
                 self.tail = 0 as *mut Node<T>;
-                Ok(data)
+                Some(data)
             } else {
                 let data = (*self.tail).data;
                 let mut current = self.tail;
@@ -81,7 +82,7 @@ impl<T> List<T> where T: Copy {
                 (*self.tail).next = 0 as *mut Node<T>;
                 (*current).prev = 0 as *mut Node<T>;
                 libc::free(current as *mut libc::c_void);
-                Ok(data)
+                Some(data)
             }
         }
     }
@@ -112,17 +113,18 @@ impl<T> List<T> {
 }
 
 impl<T> List<T> where T: Copy {
-    pub fn shift<'a>(&mut self) -> Result<T, &'a str> {
+    pub fn shift<'a>(&mut self) -> Option<T> {
         unsafe {
             if self.head.is_null() {
-                return Err("Empty list");
+                return None;
             }
 
             if self.head == self.tail {
                 let data = (*self.head).data;
+                libc::free(self.head as *mut libc::c_void);
                 self.head = 0 as *mut Node<T>;
                 self.tail = 0 as *mut Node<T>;
-                Ok(data)
+                Some(data)
             } else {
                 let data = (*self.head).data;
                 let mut current = self.head;
@@ -130,7 +132,7 @@ impl<T> List<T> where T: Copy {
                 (*self.head).prev = 0 as *mut Node<T>;
                 (*current).next = 0 as *mut Node<T>;
                 libc::free(current as *mut libc::c_void);
-                Ok(data)
+                Some(data)
             }
         }
     }
@@ -206,12 +208,10 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_pop() {
         let mut list = List::new() as List<i32>;
 
-        // Error!
-        assert!(list.pop().unwrap() == 0);
+        assert_eq!(list.pop(), None);
 
         list.push(100);
         list.push(200);
