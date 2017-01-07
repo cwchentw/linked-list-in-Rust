@@ -1,8 +1,7 @@
-use std::clone;
+extern crate libc;
+
 use std::mem;
 use std::ptr;
-
-extern crate libc;
 
 // Internal node
 struct Node<T> {
@@ -63,7 +62,7 @@ impl<T> List<T> {
     }
 }
 
-impl<T> List<T> where T: clone::Clone {
+impl<T> List<T> where T: Copy {
     pub fn pop<'a>(&mut self) -> Result<T, &'a str> {
         unsafe {
             if self.head.is_null() {
@@ -71,12 +70,12 @@ impl<T> List<T> where T: clone::Clone {
             }
 
             if self.head == self.tail {
-                let data = (*self.head).data.clone();
+                let data = (*self.head).data;
                 self.head = 0 as *mut Node<T>;
                 self.tail = 0 as *mut Node<T>;
                 Ok(data)
             } else {
-                let data = (*self.tail).data.clone();
+                let data = (*self.tail).data;
                 let mut current = self.tail;
                 self.tail = (*current).prev;
                 (*self.tail).next = 0 as *mut Node<T>;
@@ -112,7 +111,7 @@ impl<T> List<T> {
     }
 }
 
-impl<T> List<T> where T: clone::Clone {
+impl<T> List<T> where T: Copy {
     pub fn shift<'a>(&mut self) -> Result<T, &'a str> {
         unsafe {
             if self.head.is_null() {
@@ -120,12 +119,12 @@ impl<T> List<T> where T: clone::Clone {
             }
 
             if self.head == self.tail {
-                let data = (*self.head).data.clone();
+                let data = (*self.head).data;
                 self.head = 0 as *mut Node<T>;
                 self.tail = 0 as *mut Node<T>;
                 Ok(data)
             } else {
-                let data = (*self.head).data.clone();
+                let data = (*self.head).data;
                 let mut current = self.head;
                 self.head = (*current).next;
                 (*self.head).prev = 0 as *mut Node<T>;
@@ -137,14 +136,14 @@ impl<T> List<T> where T: clone::Clone {
     }
 }
 
-impl<T> List<T> where T: clone::Clone {
+impl<T> List<T> where T: Copy {
     pub fn at<'a>(&mut self, index: usize) -> Result<T, &'a str> {
         unsafe {
             let mut count = 0 as usize;
             let mut current = self.head;
             while !current.is_null() {
                 if count == index {
-                    return Ok((*current).data.clone());
+                    return Ok((*current).data);
                 }
                 current = (*current).next;
                 count += 1;
